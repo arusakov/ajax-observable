@@ -7,7 +7,8 @@
   "license": "MIT",
   "files": [
     "ajax-observable.d.ts",
-    "ajax-observable.js"    
+    "ajax-observable.js.map",   
+    "ajax-observable.js"
   ],
   "devDependencies": {
     "rxjs": "5.5.7",
