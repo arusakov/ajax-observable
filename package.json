@@ -21,6 +21,6 @@
   "scripts": {
     "build": "tsc",
     "lint": "tslint",
-    "prepublishOnly": "tsc --declaration"
+    "prepublishOnly": "tsc --declaration --sourceMap"
   }
 }
