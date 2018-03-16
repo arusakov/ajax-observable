@@ -1,3 +1,5 @@
 node_modules
 
+ajax-observable.d.ts
 ajax-observable.js
+ajax-observable.js.map
