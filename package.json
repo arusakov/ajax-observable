@@ -6,6 +6,7 @@
   "author": "a_s_rusakov@mail.ru",
   "license": "MIT",
   "files": [
+    "ajax-observable.d.ts",
     "ajax-observable.js"    
   ],
   "devDependencies": {
