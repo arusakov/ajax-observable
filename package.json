@@ -18,6 +18,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "lint": "tslint"
+    "lint": "tslint",
+    "prepublish": "tsc --declaration"
   }
 }
