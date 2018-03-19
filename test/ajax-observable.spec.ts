@@ -1,12 +1,13 @@
-import { deepStrictEqual, strictEqual, fail } from 'assert'
+import { deepStrictEqual, strictEqual, fail, ok } from 'assert'
 
 // tslint:disable-next-line:no-implicit-dependencies
 import { stub, SinonStub } from 'sinon'
 
 import { Observable } from 'rxjs/Observable'
-import { AjaxResponse, AjaxRequest, AjaxError } from 'rxjs/observable/dom/AjaxObservable'
+import { AjaxResponse, AjaxRequest, AjaxError, AjaxTimeoutError } from 'rxjs/observable/dom/AjaxObservable'
 import 'rxjs/add/observable/of'
 import 'rxjs/add/observable/empty'
+import 'rxjs/add/operator/delay'
 
 class FormData { }
 (global as any).FormData = FormData // stub for browser
@@ -20,9 +21,13 @@ const equalAjaxOptions = (stb: SinonStub, expected: AjaxRequest) => {
 type SimpleResp = Pick<AjaxResponse, 'response'>
 
 const createAjaxError = (status: number) => new AjaxError('ajax error', { status } as any, {} as any)
-const stubAjax = (resp: SimpleResp | AjaxError | Error) =>
+const stubAjax = (resp: SimpleResp | AjaxError | Error | Observable<any>) =>
   stub(Observable, 'ajax')
-    .returns(resp instanceof Error ? Observable.throw(resp) : Observable.of(resp))
+    .returns(
+      (resp instanceof Error && Observable.throw(resp)) ||
+      (resp instanceof Observable && resp) ||
+      Observable.of(resp)
+    )
 
 describe('Ajax', () => {
   const BASE_URL = '/base-url'
@@ -106,6 +111,24 @@ describe('Ajax', () => {
 
         done()
       })
+  })
+
+  it('post() with timeout', (done) => {
+    const error = new AjaxTimeoutError({} as any, {} as any)
+    ajaxSpy = stubAjax(error)
+
+    const ajaxWithTimeout = new Ajax('/', { timeout: 5000 })
+
+    ajaxWithTimeout
+      .post(URL_1, {})
+      .subscribe(
+        () => fail('no event'),
+        (err) => {
+          strictEqual(err, error)
+          done()
+        },
+        () => fail('no complete')
+      )
   })
 
   it('get()', (done) => {
