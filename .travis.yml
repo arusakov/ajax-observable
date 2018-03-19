@@ -3,3 +3,8 @@ language: node_js
 node_js:
   - "8"
   - "9"
+script:
+  - yarn lint
+  - yarn build
+  - yarn coverage
+  - yarn codecov
