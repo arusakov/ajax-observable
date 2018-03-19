@@ -2,8 +2,9 @@ import { Observable } from 'rxjs/Observable'
 import { AjaxError, AjaxResponse, AjaxRequest } from 'rxjs/observable/dom/AjaxObservable'
 
 import 'rxjs/add/observable/dom/ajax'
-import 'rxjs/add/operator/map'
+import 'rxjs/add/observable/throw'
 import 'rxjs/add/operator/catch'
+import 'rxjs/add/operator/map'
 
 export type ErrHandlers = {
   [k: number]: (e: AjaxError) => Observable<any>

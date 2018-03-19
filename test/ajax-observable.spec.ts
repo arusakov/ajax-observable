@@ -1,13 +1,14 @@
-import { deepStrictEqual, strictEqual } from 'assert'
+import { deepStrictEqual, strictEqual, fail } from 'assert'
 
 // tslint:disable-next-line:no-implicit-dependencies
 import { stub, SinonStub } from 'sinon'
 
 import { Observable } from 'rxjs/Observable'
-import { AjaxResponse, AjaxRequest } from 'rxjs/observable/dom/AjaxObservable'
+import { AjaxResponse, AjaxRequest, AjaxError } from 'rxjs/observable/dom/AjaxObservable'
 import 'rxjs/add/observable/of'
+import 'rxjs/add/observable/empty'
 
-class FormData {}
+class FormData { }
 (global as any).FormData = FormData // stub for browser
 
 import { Ajax } from '../src/ajax-observable'
@@ -16,12 +17,17 @@ const equalAjaxOptions = (stb: SinonStub, expected: AjaxRequest) => {
   deepStrictEqual(stb.args, [[expected]])
 }
 
-const stubAjax = (resp: any) => stub(Observable, 'ajax').returns(Observable.of(resp))
+type SimpleResp = Pick<AjaxResponse, 'response'>
+
+const createAjaxError = (status: number) => new AjaxError('ajax error', { status } as any, {} as any)
+const stubAjax = (resp: SimpleResp | AjaxError | Error) =>
+  stub(Observable, 'ajax')
+    .returns(resp instanceof Error ? Observable.throw(resp) : Observable.of(resp))
 
 describe('Ajax', () => {
   const BASE_URL = '/base-url'
   const URL_1 = '/url1'
-  const AJAX_RESP: Pick<AjaxResponse, 'response'> = { response: 'response' }
+  const AJAX_RESP: SimpleResp = { response: 'response' }
   const DATA_SIMPLE = { x: 1 }
   const SID = 'sid'
 
@@ -58,6 +64,22 @@ describe('Ajax', () => {
 
         done()
       })
+  })
+
+  it('get() just error', (done) => {
+    const error = new Error()
+    ajaxSpy = stubAjax(error)
+
+    ajax
+      .post(URL_1, {})
+      .subscribe(
+        () => fail('no event'),
+        (err) => {
+          strictEqual(err, error)
+          done()
+        },
+        () => fail('no complete')
+      )
   })
 
   it('post() with headers', (done) => {
@@ -175,19 +197,70 @@ describe('Ajax', () => {
 
     ajax
       .get(URL_1, DATA_SIMPLE)
-      .subscribe((resp) => {
+      .subscribe(
+        (resp) => {
+          strictEqual(resp, AJAX_RESP.response)
+          equalAjaxOptions(ajaxSpy, {
+            body: undefined,
+            headers,
+            method: 'GET',
+            timeout: undefined,
+            url: BASE_URL + URL_1 + '?x=1',
+          })
+        },
+        undefined,
+        done
+      )
+  })
 
-        strictEqual(resp, AJAX_RESP.response)
-        equalAjaxOptions(ajaxSpy, {
-          body: undefined,
-          headers,
-          method: 'GET',
-          timeout: undefined,
-          url: BASE_URL + URL_1 + '?x=1',
-        })
+  it('get() just error', (done) => {
+    const error = new Error()
+    ajaxSpy = stubAjax(error)
 
-        done()
-      })
+    ajax
+      .get(URL_1)
+      .subscribe(
+        () => fail('no event'),
+        (err) => {
+          strictEqual(err, error)
+          done()
+        },
+        () => fail('no complete')
+      )
+  })
+
+  it('get() unhandled error', (done) => {
+    const error = createAjaxError(400)
+    ajaxSpy = stubAjax(error)
+
+    ajax
+      .get(URL_1)
+      .subscribe(
+        () => fail('no event'),
+        (err) => {
+          strictEqual(err, error)
+          done()
+        },
+        () => fail('no complete')
+      )
+  })
+
+  it('get() handled error', (done) => {
+    ajaxSpy = stubAjax(createAjaxError(401))
+
+    const ajax400 = new Ajax('/', {
+      errHandlers: {
+        401: () => Observable.empty(),
+      },
+    })
+
+    ajax400
+      .get(URL_1)
+      .subscribe(
+        () => fail('no event'),
+        () => fail('no error'),
+        done
+      )
   })
 
 })
