@@ -245,22 +245,4 @@ describe('Ajax', () => {
       )
   })
 
-  it('get() handled error', (done) => {
-    ajaxSpy = stubAjax(createAjaxError(401))
-
-    const ajax400 = new Ajax('/', {
-      errHandlers: {
-        401: () => Observable.empty(),
-      },
-    })
-
-    ajax400
-      .get(URL_1)
-      .subscribe(
-        () => fail('no event'),
-        () => fail('no error'),
-        done
-      )
-  })
-
 })

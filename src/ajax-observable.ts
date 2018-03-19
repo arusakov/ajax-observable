@@ -11,7 +11,6 @@ export type ErrHandlers = {
 }
 
 export type Options = {
-  errHandlers?: ErrHandlers,
   timeout?: number,
 }
 
@@ -40,13 +39,11 @@ type Method = typeof GET | typeof POST
 
 export class Ajax {
   private baseUrl: string
-  private errHandlers: ErrHandlers
   private reqHeaders: { [h: string]: string } = {}
   private timeout?: number
 
   constructor(baseUrl: string, options?: Options) {
     this.baseUrl = baseUrl
-    this.errHandlers = options && options.errHandlers || {}
     this.timeout = options && options.timeout
   }
 
@@ -64,24 +61,12 @@ export class Ajax {
     return Observable
       .ajax(this.createRequestOptions(GET, path))
       .map(extractResponse)
-      .catch(this.catch)
   }
 
   post(path: string, data: object) {
     return Observable
       .ajax(this.createRequestOptions(POST, path, data))
       .map(extractResponse)
-      .catch(this.catch)
-  }
-
-  private catch = (err: AjaxError | Error) => {
-    if (err instanceof AjaxError) {
-      const handler = this.errHandlers[err.status]
-      if (handler) {
-        return handler(err)
-      }
-    }
-    return Observable.throw(err)
   }
 
   private createRequestOptions(method: Method, path: string, body?: object): AjaxRequest {
