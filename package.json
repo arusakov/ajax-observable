@@ -34,7 +34,7 @@
     "coverage-html": "nyc --reporter=html mocha",
     "coverage": "nyc mocha",
     "lint": "tslint -p ./src && tslint -p ./test",
-    "prepublishOnly": "yarn build",
+    "prepublishOnly": "yarn && yarn build",
     "test": "mocha"
   }
 }
