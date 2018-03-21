@@ -71,6 +71,26 @@ describe('Ajax', () => {
       })
   })
 
+  it('post() without body', (done) => {
+    ajaxSpy = stubAjax(AJAX_RESP)
+
+    ajax
+      .post(URL_1)
+      .subscribe((resp) => {
+
+        strictEqual(resp, AJAX_RESP.response)
+        equalAjaxOptions(ajaxSpy, {
+          body: undefined,
+          headers: {},
+          method: 'POST',
+          timeout: undefined,
+          url: BASE_URL + URL_1,
+        })
+
+        done()
+      })
+  })
+
   it('get() just error', (done) => {
     const error = new Error()
     ajaxSpy = stubAjax(error)

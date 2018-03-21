@@ -63,7 +63,7 @@ export class Ajax {
       .map(extractResponse)
   }
 
-  post(path: string, data: object) {
+  post(path: string, data?: object) {
     return Observable
       .ajax(this.createRequestOptions(POST, path, data))
       .map(extractResponse)
