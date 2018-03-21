@@ -191,6 +191,31 @@ describe('Ajax', () => {
       })
   })
 
+  it('get() with undefined and null', (done) => {
+    ajaxSpy = stubAjax(AJAX_RESP)
+
+    ajax
+      .get(URL_1, {
+        arr: [null, 1, undefined],
+        val: 2,
+        x: undefined,
+        y: null,
+      })
+      .subscribe((resp) => {
+
+        strictEqual(resp, AJAX_RESP.response)
+        equalAjaxOptions(ajaxSpy, {
+          body: undefined,
+          headers: {},
+          method: 'GET',
+          timeout: undefined,
+          url: BASE_URL + URL_1 + '?arr=1&val=2',
+        })
+
+        done()
+      })
+  })
+
   it('get() with array params', (done) => {
     ajaxSpy = stubAjax(AJAX_RESP)
     const params = { arr: [1, 2] }

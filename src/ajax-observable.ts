@@ -14,23 +14,30 @@ export type Options = {
   timeout?: number,
 }
 
+export type GetSimpleValue = undefined | null | number | string
+
 export type GetParams = {
-  [key: string]: number | string | Array<number | string>,
+  [key: string]: GetSimpleValue | GetSimpleValue[],
 }
 
 const extractResponse = (resp: AjaxResponse) => resp.response
 
-const encode = (key: string, val: any) => encodeURIComponent(key) + '=' + encodeURIComponent(val)
+const encode = (key: string, val: GetSimpleValue) =>
+  val != null ? encodeURIComponent(key) + '=' + encodeURIComponent(val + '') : val
 
-const encodeParams = (params: GetParams) => Object.keys(params).reduce((arr: string[], key) => {
-  const val = params[key]
-  if (Array.isArray(val)) {
-    arr.push(...(val.map((v) => encode(key, v))))
-  } else {
-    arr.push(encode(key, val))
-  }
-  return arr
-}, []).join('&')
+const encodeParams = (params: GetParams) => Object
+  .keys(params)
+  .reduce((arr: GetSimpleValue[], key) => {
+    const val = params[key]
+    if (Array.isArray(val)) {
+      arr.push(...(val.map((v) => encode(key, v))))
+    } else {
+      arr.push(encode(key, val))
+    }
+    return arr
+  }, [])
+  .filter((v) => v)
+  .join('&')
 
 const GET = 'GET'
 const POST = 'POST'
