@@ -1,7 +1,7 @@
 import { deepStrictEqual, strictEqual, fail } from 'assert'
 
 // tslint:disable-next-line:no-implicit-dependencies
-import { stub, SinonStub, useFakeTimers } from 'sinon'
+import { stub, SinonStub, useFakeTimers, SinonFakeTimers } from 'sinon'
 
 import { Observable } from 'rxjs/Observable'
 import { Subscriber } from 'rxjs/Subscriber'
@@ -39,9 +39,11 @@ describe('Ajax', () => {
   const SID = 'sid'
 
   let ajax: Ajax
+  let clock: SinonFakeTimers
   let ajaxSpy: SinonStub
 
   beforeEach(() => {
+    clock = useFakeTimers()
     ajax = new Ajax(BASE_URL)
   })
 
@@ -49,6 +51,7 @@ describe('Ajax', () => {
     if (ajaxSpy) {
       ajaxSpy.restore()
     }
+    clock.restore()
   })
 
   it('post()', (done) => {
@@ -136,8 +139,6 @@ describe('Ajax', () => {
   })
 
   it('post() with timeout', (done) => {
-    const clock = useFakeTimers()
-
     const timeoutError = new AjaxTimeoutError({} as any, {} as any)
     const error = new Error()
     let index = 0
@@ -170,8 +171,6 @@ describe('Ajax', () => {
   })
 
   it('post() sequance of 5xx', (done) => {
-    const clock = useFakeTimers()
-
     const error = createAjaxError(500)
     let index = 0
 
@@ -207,7 +206,6 @@ describe('Ajax', () => {
   })
 
   it('post() 429', (done) => {
-    const clock = useFakeTimers()
     const error429 = createAjaxError(429)
     let index = 0
 
