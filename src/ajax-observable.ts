@@ -3,12 +3,11 @@ import { AjaxError, AjaxResponse, AjaxRequest } from 'rxjs/observable/dom/AjaxOb
 
 import 'rxjs/add/observable/dom/ajax'
 import 'rxjs/add/observable/throw'
+import 'rxjs/add/observable/timer'
 import 'rxjs/add/operator/catch'
 import 'rxjs/add/operator/map'
-
-export type ErrHandlers = {
-  [k: number]: (e: AjaxError) => Observable<any>
-}
+import 'rxjs/add/operator/mergeMap'
+import 'rxjs/add/operator/retryWhen'
 
 export type Options = {
   timeout?: number,
@@ -39,6 +38,23 @@ const encodeParams = (params: GetParams) => Object
   .filter((v) => v)
   .join('&')
 
+const retryWhen = (err$: Observable<Error | AjaxError>) =>
+  err$.mergeMap((e: AjaxError | Error, index) => {
+    if (e instanceof AjaxError && (!e.status || e.status >= 500 || e.status === 429)) {
+      let seconds: number
+      // tslint:disable-next-line:prefer-conditional-expression
+      if (e.status === 429) {
+        // 30, 60, 90, 120, 150, 180, 180...
+        seconds = Math.min(index + 1, 6) * 30
+      } else {
+        // 1, 2, 4, 8, 16, 32, 60, 60...
+        seconds = index < 6 ? 2 ** index : 60
+      }
+      return Observable.timer(seconds * 1000)
+    }
+    return Observable.throw(e)
+  })
+
 const GET = 'GET'
 const POST = 'POST'
 
@@ -67,12 +83,14 @@ export class Ajax {
     }
     return Observable
       .ajax(this.createRequestOptions(GET, path))
+      .retryWhen(retryWhen)
       .map(extractResponse)
   }
 
   post(path: string, data?: object) {
     return Observable
       .ajax(this.createRequestOptions(POST, path, data))
+      .retryWhen(retryWhen)
       .map(extractResponse)
   }
 
