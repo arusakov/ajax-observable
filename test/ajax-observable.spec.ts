@@ -1,9 +1,10 @@
-import { deepStrictEqual, strictEqual, fail, ok } from 'assert'
+import { deepStrictEqual, strictEqual, fail } from 'assert'
 
 // tslint:disable-next-line:no-implicit-dependencies
-import { stub, SinonStub } from 'sinon'
+import { stub, SinonStub, useFakeTimers, SinonFakeTimers } from 'sinon'
 
 import { Observable } from 'rxjs/Observable'
+import { Subscriber } from 'rxjs/Subscriber'
 import { AjaxResponse, AjaxRequest, AjaxError, AjaxTimeoutError } from 'rxjs/observable/dom/AjaxObservable'
 import 'rxjs/add/observable/of'
 import 'rxjs/add/observable/empty'
@@ -21,11 +22,12 @@ const equalAjaxOptions = (stb: SinonStub, expected: AjaxRequest) => {
 type SimpleResp = Pick<AjaxResponse, 'response'>
 
 const createAjaxError = (status: number) => new AjaxError('ajax error', { status } as any, {} as any)
-const stubAjax = (resp: SimpleResp | AjaxError | Error | Observable<any>) =>
+const stubAjax = (resp: SimpleResp | AjaxError | Error | Observable<any> | ((s: Subscriber<any>) => void)) =>
   stub(Observable, 'ajax')
     .returns(
       (resp instanceof Error && Observable.throw(resp)) ||
       (resp instanceof Observable && resp) ||
+      (typeof resp === 'function' && new Observable(resp)) ||
       Observable.of(resp)
     )
 
@@ -37,9 +39,11 @@ describe('Ajax', () => {
   const SID = 'sid'
 
   let ajax: Ajax
+  let clock: SinonFakeTimers
   let ajaxSpy: SinonStub
 
   beforeEach(() => {
+    clock = useFakeTimers()
     ajax = new Ajax(BASE_URL)
   })
 
@@ -47,6 +51,7 @@ describe('Ajax', () => {
     if (ajaxSpy) {
       ajaxSpy.restore()
     }
+    clock.restore()
   })
 
   it('post()', (done) => {
@@ -134,8 +139,20 @@ describe('Ajax', () => {
   })
 
   it('post() with timeout', (done) => {
-    const error = new AjaxTimeoutError({} as any, {} as any)
-    ajaxSpy = stubAjax(error)
+    const timeoutError = new AjaxTimeoutError({} as any, {} as any)
+    const error = new Error()
+    let index = 0
+
+    const producer = (s: Subscriber<any>) => {
+      if (index === 0) {
+        s.error(timeoutError)
+      } else {
+        s.error(error)
+      }
+      index += 1
+    }
+
+    ajaxSpy = stubAjax(producer)
 
     const ajaxWithTimeout = new Ajax('/', { timeout: 5000 })
 
@@ -149,6 +166,72 @@ describe('Ajax', () => {
         },
         () => fail('no complete')
       )
+
+    clock.tick(1000)
+  })
+
+  it('post() sequance of 5xx', (done) => {
+    const error = createAjaxError(500)
+    let index = 0
+
+    const producer = (s: Subscriber<any>) => {
+      if (index <= 6) {
+        s.error(error)
+      } else {
+        s.next(AJAX_RESP)
+        s.complete()
+      }
+      index += 1
+    }
+
+    ajaxSpy = stubAjax(producer)
+
+    const ajaxWithTimeout = new Ajax('/')
+
+    ajaxWithTimeout
+      .post(URL_1)
+      .subscribe(
+        (resp) => strictEqual(resp, AJAX_RESP.response),
+        () => fail('no error'),
+        done
+      )
+
+    clock.tick(1000)
+    clock.tick(2000)
+    clock.tick(4000)
+    clock.tick(8000)
+    clock.tick(16000)
+    clock.tick(32000)
+    clock.tick(60000)
+  })
+
+  it('post() 429', (done) => {
+    const error429 = createAjaxError(429)
+    let index = 0
+
+    const producer = (s: Subscriber<any>) => {
+      if (index === 0) {
+        s.error(error429)
+      } else {
+        s.next(AJAX_RESP)
+        s.complete()
+      }
+      index += 1
+    }
+
+    ajaxSpy = stubAjax(producer)
+
+    const ajaxWithTimeout = new Ajax('/')
+
+    ajaxWithTimeout
+      .post(URL_1, {})
+      .subscribe(
+        (resp) => strictEqual(resp, AJAX_RESP.response),
+        () => fail('no event'),
+        done
+      )
+
+    clock.tick(30000)
   })
 
   it('get()', (done) => {
@@ -156,19 +239,21 @@ describe('Ajax', () => {
 
     ajax
       .get(URL_1, DATA_SIMPLE)
-      .subscribe((resp) => {
+      .subscribe(
+        (resp) => {
 
-        strictEqual(resp, AJAX_RESP.response)
-        equalAjaxOptions(ajaxSpy, {
-          body: undefined,
-          headers: {},
-          method: 'GET',
-          timeout: undefined,
-          url: BASE_URL + URL_1 + '?x=1',
-        })
-
-        done()
-      })
+          strictEqual(resp, AJAX_RESP.response)
+          equalAjaxOptions(ajaxSpy, {
+            body: undefined,
+            headers: {},
+            method: 'GET',
+            timeout: undefined,
+            url: BASE_URL + URL_1 + '?x=1',
+          })
+        },
+        () => fail('no error'),
+        done
+      )
   })
 
   it('get() with empty params object', (done) => {
