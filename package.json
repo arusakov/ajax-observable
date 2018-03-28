@@ -1,6 +1,6 @@
 {
   "name": "ajax-observable",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "main": "ajax-observable.js",
   "repository": "git@github.com:arusakov/ajax-observable.git",
   "author": "a_s_rusakov@mail.ru",
