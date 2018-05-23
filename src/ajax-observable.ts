@@ -59,6 +59,9 @@ const GET = 'GET'
 const POST = 'POST'
 
 type Method = typeof GET | typeof POST
+type MethodOptions = {
+  retry?: boolean
+}
 
 export class Ajax {
   private baseUrl: string
@@ -74,12 +77,18 @@ export class Ajax {
     this.reqHeaders = headers
   }
 
-  get(path: string, data?: GetParams) {
+  get(path: string, data?: GetParams, options?: MethodOptions) {
     if (data) {
       const queryString = encodeParams(data)
       if (queryString) {
         path += '?' + queryString
       }
+    }
+    const retry = options && options.retry
+    if (retry === false) {
+      return Observable
+        .ajax(this.createRequestOptions(GET, path))
+        .map(extractResponse)
     }
     return Observable
       .ajax(this.createRequestOptions(GET, path))
@@ -87,7 +96,13 @@ export class Ajax {
       .map(extractResponse)
   }
 
-  post(path: string, data?: object) {
+  post(path: string, data?: object, options?: MethodOptions) {
+    const retry = options && options.retry
+    if (retry === false) {
+      return Observable
+        .ajax(this.createRequestOptions(POST, path, data))
+        .map(extractResponse)
+    }
     return Observable
       .ajax(this.createRequestOptions(POST, path, data))
       .retryWhen(retryWhen)
