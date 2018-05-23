@@ -59,7 +59,7 @@ const GET = 'GET'
 const POST = 'POST'
 
 type Method = typeof GET | typeof POST
-type MethodOptions = {
+export type MethodOptions = {
   retry?: boolean
 }
 
