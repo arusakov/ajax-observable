@@ -85,28 +85,20 @@ export class Ajax {
       }
     }
     const retry = options && options.retry
-    if (retry === false) {
-      return Observable
-        .ajax(this.createRequestOptions(GET, path))
-        .map(extractResponse)
+    let stream = Observable.ajax(this.createRequestOptions(GET, path))
+    if (retry !== false) {
+      stream = stream.retryWhen(retryWhen)
     }
-    return Observable
-      .ajax(this.createRequestOptions(GET, path))
-      .retryWhen(retryWhen)
-      .map(extractResponse)
+    return stream.map(extractResponse)
   }
 
   post(path: string, data?: object, options?: MethodOptions) {
     const retry = options && options.retry
-    if (retry === false) {
-      return Observable
-        .ajax(this.createRequestOptions(POST, path, data))
-        .map(extractResponse)
+    let stream = Observable.ajax(this.createRequestOptions(POST, path, data))
+    if (retry !== false) {
+      stream = stream.retryWhen(retryWhen)
     }
-    return Observable
-      .ajax(this.createRequestOptions(POST, path, data))
-      .retryWhen(retryWhen)
-      .map(extractResponse)
+    return stream.map(extractResponse)
   }
 
   private createRequestOptions(method: Method, path: string, body?: object): AjaxRequest {
