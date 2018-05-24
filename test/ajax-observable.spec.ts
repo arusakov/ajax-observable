@@ -234,6 +234,40 @@ describe('Ajax', () => {
     clock.tick(30000)
   })
 
+  it('post() 429 without retry', (done) => {
+    const error429 = createAjaxError(429)
+
+    const producer = (s: Subscriber<any>) => {
+        s.error(error429)
+    }
+
+    ajaxSpy = stubAjax(producer)
+    ajax
+      .post(URL_1, DATA_SIMPLE, {retry: false})
+      .subscribe(
+        () => fail('no emit'),
+        () => done(),
+        () => fail('no complete')
+      )
+  })
+
+  it('get() 429 without retry', (done) => {
+    const error429 = createAjaxError(429)
+
+    const producer = (s: Subscriber<any>) => {
+        s.error(error429)
+    }
+
+    ajaxSpy = stubAjax(producer)
+    ajax
+      .get(URL_1, DATA_SIMPLE, {retry: false})
+      .subscribe(
+        () => fail('no emit'),
+        () => done(),
+        () => fail('no complete')
+      )
+  })
+
   it('get()', (done) => {
     ajaxSpy = stubAjax(AJAX_RESP)
 
