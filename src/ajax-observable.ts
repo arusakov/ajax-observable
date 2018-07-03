@@ -8,6 +8,8 @@ import 'rxjs/add/operator/catch'
 import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/mergeMap'
 import 'rxjs/add/operator/retryWhen'
+import 'rxjs/add/operator/take'
+import 'rxjs/add/observable/empty'
 
 export type Options = {
   timeout?: number,
@@ -38,17 +40,18 @@ const encodeParams = (params: GetParams) => Object
   .filter((v) => v)
   .join('&')
 
-const retryWhen = (err$: Observable<Error | AjaxError>) =>
+const retryWhen = (retry?: number) => (err$: Observable<Error | AjaxError>) =>
   err$.mergeMap((e: AjaxError | Error, index) => {
     if (e instanceof AjaxError && (!e.status || e.status >= 500 || e.status === 429)) {
+      if ((retry !== undefined) && index >= retry) { return Observable.throw(e) }
       let seconds: number
-      // tslint:disable-next-line:prefer-conditional-expression
+        // tslint:disable-next-line:prefer-conditional-expression
       if (e.status === 429) {
-        // 30, 60, 90, 120, 150, 180, 180...
-        seconds = Math.min(index + 1, 6) * 30
+          // 30, 60, 90, 120, 150, 180, 180...
+          seconds = Math.min(index + 1, 6) * 30
       } else {
-        // 1, 2, 4, 8, 16, 32, 60, 60...
-        seconds = index < 6 ? 2 ** index : 60
+          // 1, 2, 4, 8, 16, 32, 60, 60...
+          seconds = index < 6 ? 2 ** index : 60
       }
       return Observable.timer(seconds * 1000)
     }
@@ -60,7 +63,7 @@ const POST = 'POST'
 
 type Method = typeof GET | typeof POST
 export type MethodOptions = {
-  retry?: boolean
+  retry?: number
 }
 
 export class Ajax {
@@ -86,18 +89,14 @@ export class Ajax {
     }
     const retry = options && options.retry
     let stream = Observable.ajax(this.createRequestOptions(GET, path))
-    if (retry !== false) {
-      stream = stream.retryWhen(retryWhen)
-    }
+    stream = (retry !== undefined) && retry >= 0 ? stream.retryWhen(retryWhen(retry)) : stream.retryWhen(retryWhen())
     return stream.map(extractResponse)
   }
 
   post(path: string, data?: object, options?: MethodOptions) {
     const retry = options && options.retry
     let stream = Observable.ajax(this.createRequestOptions(POST, path, data))
-    if (retry !== false) {
-      stream = stream.retryWhen(retryWhen)
-    }
+    stream = (retry !== undefined) && retry >= 0 ? stream.retryWhen(retryWhen(retry)) : stream.retryWhen(retryWhen())
     return stream.map(extractResponse)
   }
 
