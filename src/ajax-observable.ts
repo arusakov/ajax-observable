@@ -41,13 +41,13 @@ const encodeParams = (params: GetParams) => Object
 const retryWhen = (retry: number) => (err$: Observable<Error | AjaxError>) =>
   err$.mergeMap((e: AjaxError | Error, index) => {
     if (e instanceof AjaxError && (!e.status || e.status >= 500 || e.status === 429)) {
-      if (retry >= 0 && index >= retry) { return Observable.throw(e) }
       let seconds: number
       // tslint:disable-next-line:prefer-conditional-expression
       if (e.status === 429) {
         // 30, 60, 90, 120, 150, 180, 180...
         seconds = Math.min(index + 1, 6) * 30
       } else {
+        if (retry >= 0 && index >= retry) { return Observable.throw(e) }
         // 1, 2, 4, 8, 16, 32, 60, 60...
         seconds = index < 6 ? 2 ** index : 60
       }

@@ -234,11 +234,11 @@ describe('Ajax', () => {
     clock.tick(30000)
   })
 
-  it('post() 429 without retry', (done) => {
-    const error429 = createAjaxError(429)
+  it('post() 500 without retry', (done) => {
+    const error500 = createAjaxError(500)
 
     const producer = (s: Subscriber<any>) => {
-        s.error(error429)
+        s.error(error500)
     }
 
     ajaxSpy = stubAjax(producer)
@@ -285,11 +285,11 @@ describe('Ajax', () => {
       clock.tick(32000)
   })
 
-  it('get() 429 without retry', (done) => {
-    const error429 = createAjaxError(429)
+  it('get() 500 without retry', (done) => {
+    const error500 = createAjaxError(500)
 
     const producer = (s: Subscriber<any>) => {
-        s.error(error429)
+        s.error(error500)
     }
 
     ajaxSpy = stubAjax(producer)
