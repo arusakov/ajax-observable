@@ -46,8 +46,9 @@ const retryWhen = (retry: number) => (err$: Observable<Error | AjaxError>) =>
       if (e.status === 429) {
         // 30, 60, 90, 120, 150, 180, 180...
         seconds = Math.min(index + 1, 6) * 30
+      } else if (retry >= 0 && index >= retry) {
+        return Observable.throw(e)
       } else {
-        if (retry >= 0 && index >= retry) { return Observable.throw(e) }
         // 1, 2, 4, 8, 16, 32, 60, 60...
         seconds = index < 6 ? 2 ** index : 60
       }
