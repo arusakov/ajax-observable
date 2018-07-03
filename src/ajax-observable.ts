@@ -1,13 +1,7 @@
-import { Observable } from 'rxjs/Observable'
-import { AjaxError, AjaxResponse, AjaxRequest } from 'rxjs/observable/dom/AjaxObservable'
+import { timer as observableTimer, throwError as observableThrowError,  Observable } from 'rxjs'
 
-import 'rxjs/add/observable/dom/ajax'
-import 'rxjs/add/observable/throw'
-import 'rxjs/add/observable/timer'
-import 'rxjs/add/operator/catch'
-import 'rxjs/add/operator/map'
-import 'rxjs/add/operator/mergeMap'
-import 'rxjs/add/operator/retryWhen'
+import { retryWhen, map, mergeMap } from 'rxjs/operators'
+import { ajax, AjaxError, AjaxRequest, AjaxResponse } from 'rxjs/ajax'
 
 export type Options = {
   timeout?: number,
@@ -38,8 +32,8 @@ const encodeParams = (params: GetParams) => Object
   .filter((v) => v)
   .join('&')
 
-const retryWhen = (retry: number) => (err$: Observable<Error | AjaxError>) =>
-  err$.mergeMap((e: AjaxError | Error, index) => {
+const whenRetry = (retry: number) => (err$: Observable<Error | AjaxError>) =>
+  err$.pipe(mergeMap((e: AjaxError | Error, index) => {
     if (e instanceof AjaxError && (!e.status || e.status >= 500 || e.status === 429)) {
       let seconds: number
       // tslint:disable-next-line:prefer-conditional-expression
@@ -47,15 +41,15 @@ const retryWhen = (retry: number) => (err$: Observable<Error | AjaxError>) =>
         // 30, 60, 90, 120, 150, 180, 180...
         seconds = Math.min(index + 1, 6) * 30
       } else if (retry >= 0 && index >= retry) {
-        return Observable.throw(e)
+        return observableThrowError(e)
       } else {
         // 1, 2, 4, 8, 16, 32, 60, 60...
         seconds = index < 6 ? 2 ** index : 60
       }
-      return Observable.timer(seconds * 1000)
+      return observableTimer(seconds * 1000)
     }
-    return Observable.throw(e)
-  })
+    return observableThrowError(e)
+  }))
 
 const GET = 'GET'
 const POST = 'POST'
@@ -90,17 +84,15 @@ export class Ajax {
         path += '?' + queryString
       }
     }
-    return Observable
-      .ajax(this.createRequestOptions(GET, path))
-      .retryWhen(retryWhen(retry))
-      .map(extractResponse)
+    return ajax(this.createRequestOptions(GET, path)).pipe(
+      retryWhen(whenRetry(retry)),
+      map(extractResponse))
   }
 
   post(path: string, data?: object, { retry } = defaultOptions) {
-    return Observable
-      .ajax(this.createRequestOptions(POST, path, data))
-      .retryWhen(retryWhen(retry))
-      .map(extractResponse)
+    return ajax(this.createRequestOptions(POST, path, data)).pipe(
+      retryWhen(whenRetry(retry)),
+      map(extractResponse))
   }
 
   private createRequestOptions(method: Method, path: string, body?: object): AjaxRequest {
