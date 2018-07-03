@@ -38,7 +38,7 @@ const encodeParams = (params: GetParams) => Object
   .filter((v) => v)
   .join('&')
 
-const retryWhen = (err$: Observable<Error | AjaxError>) =>
+const retryWhen = (retry: number) => (err$: Observable<Error | AjaxError>) =>
   err$.mergeMap((e: AjaxError | Error, index) => {
     if (e instanceof AjaxError && (!e.status || e.status >= 500 || e.status === 429)) {
       let seconds: number
@@ -46,6 +46,8 @@ const retryWhen = (err$: Observable<Error | AjaxError>) =>
       if (e.status === 429) {
         // 30, 60, 90, 120, 150, 180, 180...
         seconds = Math.min(index + 1, 6) * 30
+      } else if (retry >= 0 && index >= retry) {
+        return Observable.throw(e)
       } else {
         // 1, 2, 4, 8, 16, 32, 60, 60...
         seconds = index < 6 ? 2 ** index : 60
@@ -59,6 +61,13 @@ const GET = 'GET'
 const POST = 'POST'
 
 type Method = typeof GET | typeof POST
+
+/**
+ * retry < 0 for infinity
+ */
+const defaultOptions = {
+  retry: -1,
+}
 
 export class Ajax {
   private baseUrl: string
@@ -74,7 +83,7 @@ export class Ajax {
     this.reqHeaders = headers
   }
 
-  get(path: string, data?: GetParams) {
+  get(path: string, data?: GetParams, { retry } = defaultOptions) {
     if (data) {
       const queryString = encodeParams(data)
       if (queryString) {
@@ -83,14 +92,14 @@ export class Ajax {
     }
     return Observable
       .ajax(this.createRequestOptions(GET, path))
-      .retryWhen(retryWhen)
+      .retryWhen(retryWhen(retry))
       .map(extractResponse)
   }
 
-  post(path: string, data?: object) {
+  post(path: string, data?: object, { retry } = defaultOptions) {
     return Observable
       .ajax(this.createRequestOptions(POST, path, data))
-      .retryWhen(retryWhen)
+      .retryWhen(retryWhen(retry))
       .map(extractResponse)
   }
 

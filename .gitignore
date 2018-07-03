@@ -1,6 +1,6 @@
 .DS_Store
 .nyc_output
-
+.idea
 coverage
 node_modules
 

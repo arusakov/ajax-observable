@@ -157,7 +157,7 @@ describe('Ajax', () => {
     const ajaxWithTimeout = new Ajax('/', { timeout: 5000 })
 
     ajaxWithTimeout
-      .post(URL_1, {})
+      .post(URL_1)
       .subscribe(
         () => fail('no event'),
         (err) => {
@@ -232,6 +232,74 @@ describe('Ajax', () => {
       )
 
     clock.tick(30000)
+  })
+
+  it('post() 500 without retry', (done) => {
+    const error500 = createAjaxError(500)
+
+    const producer = (s: Subscriber<any>) => {
+        s.error(error500)
+    }
+
+    ajaxSpy = stubAjax(producer)
+    ajax
+      .post(URL_1, DATA_SIMPLE, {retry: 0})
+      .subscribe(
+        () => fail('no emit'),
+        () => done(),
+        () => fail('no complete')
+      )
+  })
+
+  it('post() sequance of 5xx with 5 retries', (done) => {
+      const error = createAjaxError(500)
+      let index = 0
+
+      const producer = (s: Subscriber<any>) => {
+          if (index < 5) {
+              s.error(error)
+          } else {
+              s.next(AJAX_RESP)
+              s.complete()
+          }
+          index += 1
+      }
+
+      ajaxSpy = stubAjax(producer)
+
+      const ajaxWithTimeout = new Ajax('/')
+
+      ajaxWithTimeout
+          .post(URL_1, {}, {retry: 5})
+          .subscribe(
+              (resp) => strictEqual(resp, AJAX_RESP.response),
+              () => fail('no error'),
+              done
+          )
+
+      clock.tick(1000)
+      clock.tick(2000)
+      clock.tick(4000)
+      clock.tick(8000)
+      clock.tick(16000)
+      clock.tick(32000)
+  })
+
+  it('get() 500 without retry', (done) => {
+    const error500 = createAjaxError(500)
+
+    const producer = (s: Subscriber<any>) => {
+        s.error(error500)
+    }
+
+    ajaxSpy = stubAjax(producer)
+    ajax
+      .get(URL_1, DATA_SIMPLE, {retry: 0})
+      .subscribe(
+        () => fail('no emit'),
+        () => done(),
+        () => fail('no complete')
+      )
   })
 
   it('get()', (done) => {
