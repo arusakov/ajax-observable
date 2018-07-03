@@ -60,8 +60,12 @@ const GET = 'GET'
 const POST = 'POST'
 
 type Method = typeof GET | typeof POST
-export type MethodOptions = {
-  retry?: number
+
+/**
+ * retry < 0 for infinity
+ */
+const defaultOptions = {
+  retry: -1,
 }
 
 export class Ajax {
@@ -78,26 +82,24 @@ export class Ajax {
     this.reqHeaders = headers
   }
 
-  get(path: string, data?: GetParams, options?: MethodOptions) {
+  get(path: string, data?: GetParams, { retry } = defaultOptions) {
     if (data) {
       const queryString = encodeParams(data)
       if (queryString) {
         path += '?' + queryString
       }
     }
-    const retryOptions = options && options.retry
-    const retry = retryOptions !== undefined ? retryOptions : -1
-    let stream = Observable.ajax(this.createRequestOptions(GET, path))
-    stream = stream.retryWhen(retryWhen(retry))
-    return stream.map(extractResponse)
+    return Observable
+      .ajax(this.createRequestOptions(GET, path))
+      .retryWhen(retryWhen(retry))
+      .map(extractResponse)
   }
 
-  post(path: string, data?: object, options?: MethodOptions) {
-    const retryOptions = options && options.retry
-    const retry = retryOptions !== undefined ? retryOptions : -1
-    let stream = Observable.ajax(this.createRequestOptions(POST, path, data))
-    stream = stream.retryWhen(retryWhen(retry))
-    return stream.map(extractResponse)
+  post(path: string, data?: object, { retry } = defaultOptions) {
+    return Observable
+      .ajax(this.createRequestOptions(POST, path, data))
+      .retryWhen(retryWhen(retry))
+      .map(extractResponse)
   }
 
   private createRequestOptions(method: Method, path: string, body?: object): AjaxRequest {
