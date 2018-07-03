@@ -38,18 +38,18 @@ const encodeParams = (params: GetParams) => Object
   .filter((v) => v)
   .join('&')
 
-const retryWhen = (retry?: number) => (err$: Observable<Error | AjaxError>) =>
+const retryWhen = (retry: number) => (err$: Observable<Error | AjaxError>) =>
   err$.mergeMap((e: AjaxError | Error, index) => {
     if (e instanceof AjaxError && (!e.status || e.status >= 500 || e.status === 429)) {
-      if ((retry !== undefined) && index >= retry) { return Observable.throw(e) }
+      if (retry >= 0 && index >= retry) { return Observable.throw(e) }
       let seconds: number
-        // tslint:disable-next-line:prefer-conditional-expression
+      // tslint:disable-next-line:prefer-conditional-expression
       if (e.status === 429) {
-          // 30, 60, 90, 120, 150, 180, 180...
-          seconds = Math.min(index + 1, 6) * 30
+        // 30, 60, 90, 120, 150, 180, 180...
+        seconds = Math.min(index + 1, 6) * 30
       } else {
-          // 1, 2, 4, 8, 16, 32, 60, 60...
-          seconds = index < 6 ? 2 ** index : 60
+        // 1, 2, 4, 8, 16, 32, 60, 60...
+        seconds = index < 6 ? 2 ** index : 60
       }
       return Observable.timer(seconds * 1000)
     }
@@ -85,16 +85,18 @@ export class Ajax {
         path += '?' + queryString
       }
     }
-    const retry = options && options.retry
+    const retryOptions = options && options.retry
+    const retry = retryOptions !== undefined ? retryOptions : -1
     let stream = Observable.ajax(this.createRequestOptions(GET, path))
-    stream = (retry !== undefined) && retry >= 0 ? stream.retryWhen(retryWhen(retry)) : stream.retryWhen(retryWhen())
+    stream = stream.retryWhen(retryWhen(retry))
     return stream.map(extractResponse)
   }
 
   post(path: string, data?: object, options?: MethodOptions) {
-    const retry = options && options.retry
+    const retryOptions = options && options.retry
+    const retry = retryOptions !== undefined ? retryOptions : -1
     let stream = Observable.ajax(this.createRequestOptions(POST, path, data))
-    stream = (retry !== undefined) && retry >= 0 ? stream.retryWhen(retryWhen(retry)) : stream.retryWhen(retryWhen())
+    stream = stream.retryWhen(retryWhen(retry))
     return stream.map(extractResponse)
   }
 
