@@ -1,14 +1,17 @@
+import {
+    throwError as observableThrowError,
+    Observable,
+    Subscriber,
+    of as observableOf,
+} from 'rxjs'
+
+import * as rxAjax from 'rxjs/ajax'
+// tslint:disable-next-line:no-duplicate-imports
+import {AjaxError, AjaxRequest, AjaxResponse, AjaxTimeoutError} from 'rxjs/ajax'
 import { deepStrictEqual, strictEqual, fail } from 'assert'
 
 // tslint:disable-next-line:no-implicit-dependencies
 import { stub, SinonStub, useFakeTimers, SinonFakeTimers } from 'sinon'
-
-import { Observable } from 'rxjs/Observable'
-import { Subscriber } from 'rxjs/Subscriber'
-import { AjaxResponse, AjaxRequest, AjaxError, AjaxTimeoutError } from 'rxjs/observable/dom/AjaxObservable'
-import 'rxjs/add/observable/of'
-import 'rxjs/add/observable/empty'
-import 'rxjs/add/operator/delay'
 
 class FormData { }
 (global as any).FormData = FormData // stub for browser
@@ -23,12 +26,12 @@ type SimpleResp = Pick<AjaxResponse, 'response'>
 
 const createAjaxError = (status: number) => new AjaxError('ajax error', { status } as any, {} as any)
 const stubAjax = (resp: SimpleResp | AjaxError | Error | Observable<any> | ((s: Subscriber<any>) => void)) =>
-  stub(Observable, 'ajax')
+  stub(rxAjax, 'ajax')
     .returns(
-      (resp instanceof Error && Observable.throw(resp)) ||
+      (resp instanceof Error && observableThrowError(resp)) ||
       (resp instanceof Observable && resp) ||
       (typeof resp === 'function' && new Observable(resp)) ||
-      Observable.of(resp)
+        observableOf(resp)
     )
 
 describe('Ajax', () => {
