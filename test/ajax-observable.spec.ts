@@ -291,6 +291,30 @@ describe('Ajax', () => {
       clock.tick(32000)
   })
 
+  it('post() with subscriber', (done) => {
+    ajaxSpy = stubAjax(AJAX_RESP)
+    const sub = (): Subscriber<any> => Subscriber.create()
+
+    ajax
+      .post(URL_1, DATA_SIMPLE, { progressSubscriber: sub })
+      .subscribe((resp) => {
+
+        strictEqual(resp, AJAX_RESP.response)
+        equalAjaxOptions(ajaxSpy, {
+          body: DATA_SIMPLE,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          method: 'POST',
+          timeout: undefined,
+          url: BASE_URL + URL_1,
+          progressSubscriber: sub(),
+        })
+
+        done()
+      })
+  })
+
   it('get() 500 without retry', (done) => {
     const error500 = createAjaxError(500)
 
