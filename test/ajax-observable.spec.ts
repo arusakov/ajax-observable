@@ -359,7 +359,7 @@ describe('Ajax', () => {
     ajaxSpy = stubAjax(AJAX_RESP)
 
     ajax
-      .get(URL_1)
+      .get(URL_1, {})
       .subscribe((resp) => {
 
         strictEqual(resp, AJAX_RESP.response)
