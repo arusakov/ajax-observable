@@ -73,6 +73,7 @@ describe('Ajax', () => {
           method: 'POST',
           timeout: undefined,
           url: BASE_URL + URL_1,
+          progressSubscriber: undefined,
         })
 
         done()
@@ -93,6 +94,7 @@ describe('Ajax', () => {
           method: 'POST',
           timeout: undefined,
           url: BASE_URL + URL_1,
+          progressSubscriber: undefined,
         })
 
         done()
@@ -135,6 +137,7 @@ describe('Ajax', () => {
           method: 'POST',
           timeout: undefined,
           url: BASE_URL + URL_1,
+          progressSubscriber: undefined,
         })
 
         done()
@@ -320,6 +323,7 @@ describe('Ajax', () => {
             method: 'GET',
             timeout: undefined,
             url: BASE_URL + URL_1 + '?x=1',
+            progressSubscriber: undefined,
           })
         },
         () => fail('no error'),
@@ -331,7 +335,7 @@ describe('Ajax', () => {
     ajaxSpy = stubAjax(AJAX_RESP)
 
     ajax
-      .get(URL_1, {})
+      .get(URL_1)
       .subscribe((resp) => {
 
         strictEqual(resp, AJAX_RESP.response)
@@ -341,6 +345,7 @@ describe('Ajax', () => {
           method: 'GET',
           timeout: undefined,
           url: BASE_URL + URL_1,
+          progressSubscriber: undefined,
         })
 
         done()
@@ -366,6 +371,7 @@ describe('Ajax', () => {
           method: 'GET',
           timeout: undefined,
           url: BASE_URL + URL_1 + '?arr=1&val=2',
+          progressSubscriber: undefined,
         })
 
         done()
@@ -387,6 +393,7 @@ describe('Ajax', () => {
           method: 'GET',
           timeout: undefined,
           url: BASE_URL + URL_1 + '?arr=1&arr=2',
+          progressSubscriber: undefined,
         })
 
         done()
@@ -407,6 +414,7 @@ describe('Ajax', () => {
           method: 'GET',
           timeout: undefined,
           url: BASE_URL + URL_1,
+          progressSubscriber: undefined,
         })
 
         done()
@@ -430,6 +438,7 @@ describe('Ajax', () => {
             method: 'GET',
             timeout: undefined,
             url: BASE_URL + URL_1 + '?x=1',
+            progressSubscriber: undefined,
           })
         },
         undefined,
