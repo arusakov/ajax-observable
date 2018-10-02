@@ -1,4 +1,4 @@
-import { timer as observableTimer, throwError as observableThrowError,  Observable } from 'rxjs'
+import { timer as observableTimer, throwError as observableThrowError, Observable, Subscriber } from 'rxjs'
 
 import { retryWhen, map, mergeMap } from 'rxjs/operators'
 import { ajax, AjaxError, AjaxRequest, AjaxResponse } from 'rxjs/ajax'
@@ -56,6 +56,11 @@ const POST = 'POST'
 
 type Method = typeof GET | typeof POST
 
+export type MethodOptions = {
+  retry?: number,
+  progressSubscriber?: () => Subscriber<any>,
+}
+
 /**
  * retry < 0 for infinity
  */
@@ -77,25 +82,28 @@ export class Ajax {
     this.reqHeaders = headers
   }
 
-  get(path: string, data?: GetParams, { retry } = defaultOptions) {
+  get(path: string, data?: GetParams, { retry, progressSubscriber }: MethodOptions = defaultOptions) {
     if (data) {
       const queryString = encodeParams(data)
       if (queryString) {
         path += '?' + queryString
       }
     }
-    return ajax(this.createRequestOptions(GET, path)).pipe(
+    return ajax(this.createRequestOptions(GET, path, undefined, progressSubscriber)).pipe(
       retryWhen(whenRetry(retry)),
       map(extractResponse))
   }
 
-  post(path: string, data?: object, { retry } = defaultOptions) {
-    return ajax(this.createRequestOptions(POST, path, data)).pipe(
+  post(path: string, data?: object, { retry, progressSubscriber }: MethodOptions = defaultOptions) {
+    return ajax(this.createRequestOptions(POST, path, data, progressSubscriber)).pipe(
       retryWhen(whenRetry(retry)),
       map(extractResponse))
   }
 
-  private createRequestOptions(method: Method, path: string, body?: object): AjaxRequest {
+  private createRequestOptions(method: Method,
+                               path: string,
+                               body?: object,
+                               progressSubscriber?: () => Subscriber<any>): AjaxRequest {
     const headers: any = {}
     if (body && !(body instanceof FormData)) {
       headers['Content-Type'] = 'application/json'
@@ -106,6 +114,7 @@ export class Ajax {
       method,
       timeout: this.timeout,
       url: this.baseUrl + path,
+      progressSubscriber: progressSubscriber && progressSubscriber(),
     }
   }
 }
