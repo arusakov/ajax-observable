@@ -82,6 +82,10 @@ export class Ajax {
     this.reqHeaders = headers
   }
 
+  setBaseUrl(newBaseUrl: string) {
+    this.baseUrl = newBaseUrl
+  }
+
   get(path: string, data?: GetParams, { retry, progressSubscriber }: MethodOptions = defaultOptions) {
     if (data) {
       const queryString = encodeParams(data)

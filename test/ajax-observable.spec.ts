@@ -60,6 +60,9 @@ describe('Ajax', () => {
   it('post()', (done) => {
     ajaxSpy = stubAjax(AJAX_RESP)
 
+    const NEW_BASE_URL = 'NewBaseUrl'
+    ajax.setBaseUrl(NEW_BASE_URL)
+
     ajax
       .post(URL_1, DATA_SIMPLE)
       .subscribe((resp) => {
@@ -72,7 +75,7 @@ describe('Ajax', () => {
           },
           method: 'POST',
           timeout: undefined,
-          url: BASE_URL + URL_1,
+          url: NEW_BASE_URL + URL_1,
           progressSubscriber: undefined,
         })
 
