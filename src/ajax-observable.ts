@@ -1,7 +1,7 @@
 import { timer as observableTimer, throwError as observableThrowError, Observable, Subscriber } from 'rxjs'
 
 import { retryWhen, map, mergeMap } from 'rxjs/operators'
-import { ajax, AjaxError, AjaxRequest, AjaxResponse } from 'rxjs/ajax'
+import { ajax, AjaxError, AjaxRequest, AjaxResponse, AjaxTimeoutError } from 'rxjs/ajax'
 
 export type Options = {
   timeout?: number,
@@ -34,7 +34,7 @@ const encodeParams = (params: GetParams) => Object
 
 const whenRetry = (retry: number) => (err$: Observable<Error | AjaxError>) =>
   err$.pipe(mergeMap((e: AjaxError | Error, index) => {
-    if (e instanceof AjaxError && (!e.status || e.status >= 500 || e.status === 429)) {
+    if ((e instanceof AjaxError || e instanceof AjaxTimeoutError) && (!e.status || e.status >= 500 || e.status === 429)) {
       let seconds: number
       // tslint:disable-next-line:prefer-conditional-expression
       if (e.status === 429) {
