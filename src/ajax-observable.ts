@@ -34,7 +34,10 @@ const encodeParams = (params: GetParams) => Object
 
 const whenRetry = (retry: number) => (err$: Observable<Error | AjaxError>) =>
   err$.pipe(mergeMap((e: AjaxError | Error, index) => {
-    if ((e instanceof AjaxError || e instanceof AjaxTimeoutError) && (!e.status || e.status >= 500 || e.status === 429)) {
+    if (
+      (e instanceof AjaxError || e instanceof AjaxTimeoutError) &&
+      (!e.status || e.status >= 500 || e.status === 429)
+    ) {
       let seconds: number
       // tslint:disable-next-line:prefer-conditional-expression
       if (e.status === 429) {
