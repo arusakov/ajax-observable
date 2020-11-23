@@ -1,6 +1,6 @@
 {
   "name": "ajax-observable",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "main": "ajax-observable.js",
   "repository": "git@github.com:arusakov/ajax-observable.git",
   "author": "a_s_rusakov@mail.ru",
@@ -34,7 +34,6 @@
     "coverage-html": "nyc --reporter=html mocha",
     "coverage": "nyc mocha",
     "lint": "tslint -p ./src && tslint -p ./test",
-    "prepublishOnly": "yarn && yarn build",
     "test": "mocha"
   }
 }
